@@ -37,18 +37,16 @@ function createUser() {
 			$domain = substr(strrchr($_GET["email"], "@"), 1);
 
 			if (trim($domain) == "" or isset($domain) == False) {
-				_error("Please use a valid email.");
+				return _error("Please use a valid email.");
 			} else {
 				$user->school_id = createSchool($domain); 
 				$user->save(); 
 				$user->get("email", $_GET["email"]);
 
-				_respond($user); 
+				return _respond($user); 
 			}
-
-
 		} else {
-			_error("A user with that email already exists.");
+			return _error("A user with that email already exists.");
 		}
 	}
 }
@@ -58,13 +56,13 @@ function logIn() {
 		$user = new User(); 
 
 		if (sizeof($user->search("email", $_GET["email"])) == 0) {
-			_error("A user with that email doesn't exists.");
+			return _error("A user with that email doesn't exists.");
 		} else {
 			$user->get("email", $_GET["email"]); 
 			if ($user->password == $_GET["password"]) {
-				_respond($user); 
+				return _respond($user); 
 			} else {
-				_error("Incorrect Password"); 
+				return _error("Incorrect Password"); 
 			}
 		}
 
@@ -140,9 +138,9 @@ function enrollUserInCourse() {
 			$enrollment->course_id = $course_id;
 			$enrollment->created_at = time();
 			$enrollment->save(); 
-			_respond($enrollment);
+			return _respond($enrollment);
 		} else {
-			_error("You're already in that class!"); 
+			return _error("You're already in that class!"); 
 		}
 
 	}
@@ -176,9 +174,9 @@ function getUserCourses() {
 				$courses[$i]["description"] = "Members: {$num_ppl}";
 			}
 
-			_respond($courses); 
+			return _respond($courses); 
 		} else {
-			_error("You aren't in any courses!"); 
+			return _error("You aren't in any courses!"); 
 		}
 	}
 }
@@ -199,7 +197,7 @@ function dropUserFromCourse() {
 		$courses = $course->match(["name" => $course_name, "school_id" => $school_id]);
 
 		if (sizeof($courses) == 0) {
-			_error("That course doesn't exist");
+			return _error("That course doesn't exist");
 		}
 
 		$course->get("id", $courses[0]["id"]);
@@ -210,11 +208,11 @@ function dropUserFromCourse() {
 		$search = $enrollment->match(["course_id" => $course_id, "user_id" => $user_id]);
 
 		if (sizeof($search) == 0) {
-			_error("You aren't in that class!");
+			return _error("You aren't in that class!");
 		} else {
 			$enrollment->get("id", $search[0]["id"]);
 			$enrollment->delete();
-			_respond("You successfully dropped {$course_name}.");
+			return _respond("You successfully dropped {$course_name}.");
 		}
 
 	}
@@ -228,9 +226,18 @@ function postQuestion() {
 		$question->created_at = time();
 		$question->user_id = $_GET["user_id"];
 		$question->course_id = $_GET["course_id"];
-		$question->save(); 
+		
+		$result = False; 
 
-		_respond($question); 
+		$result = $question->save(); 
+
+		if ($result) {
+			return _respond($question); 
+		} else {
+			return _error("Internal Server Error."); 
+		}
+
+		
 	}
 }
 
@@ -249,7 +256,7 @@ function getCourseQuestions() {
 			$questions[$i]["likes"] = sizeof($likes);
 		}
 
-		_respond($questions); 
+		return _respond($questions); 
 	}
 }
 
@@ -262,24 +269,33 @@ function likeQuestion() {
 			$like->question_id = $_GET["question_id"]; 
 			$like->created_at = time();
 			$like->save(); 
-			_respond($like); 
+			return _respond($like); 
 		} else {
-			_error("You already liked this question.");
+			return _error("You already liked this question.");
 		}
 	}
 }
 
 function postAnswer() {
 	if (_validate("postAnswer")) {
+		$result = False; 
+
 		$answer = new Answer(); 
 			$answer->content = $_GET["answer"]; 
 			$answer->likes = 0; 
 			$answer->created_at = time(); 
 			$answer->user_id = $_GET["user_id"]; 
 			$answer->question_id = $_GET["question_id"]; 
-			$answer->save(); 
+			
+			$result = $answer->save(); 
+		
+			if ($result) {
+				return _respond($answer);
+			} else {
+				return _error("Internal Server Error."); 
+			}
 
-			_respond($answer);
+			
 	}
 }
 
@@ -298,7 +314,7 @@ function getQuestionAnswers() {
 			$answers[$i]["likes"] = sizeof($likes);
 		}
 
-		_respond($answers); 
+		return _respond($answers); 
 	}
 }
 
@@ -313,9 +329,9 @@ function likeAnswer() {
 			$like->answer_id = $_GET["answer_id"]; 
 			$like->created_at = time();
 			$like->save(); 
-			_respond($like); 
+			return _respond($like); 
 		} else {
-			_error("You already liked this answer.");
+			return _error("You already liked this answer.");
 		}
 	}
 }
@@ -372,21 +388,76 @@ function getEndpoints() {
 	return $endpoints; 
 }
 
-function tests() {
-	$endpoints = getEndpoints(); 
+function _randstr($length = 10) {
+    $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $charactersLength = strlen($characters);
+    $randomString = '';
+    for ($i = 0; $i < $length; $i++) {
+        $randomString .= $characters[rand(0, $charactersLength - 1)];
+    }
+    return $randomString;
+}
 
+function tests() {
+
+	$endpoints = []; 
+
+	// create user
+	$email = _randstr() . "@" . _randstr() . ".edu";
+	$name = _randstr(); 
+	$_GET["email"] = $email; 
+	$_GET["first_name"] = $name;
+	$_GET["last_name"] = "test";
+	$_GET["password"] = "test";
+	$endpoints["createUser"] = createUser(); 
+
+	// log in
+	echo "<br><br>";
+	$endpoints["logIn"] = logIn();
+
+	// enroll user in course
+	$_GET["user_id"] = 1; 
+	$_GET["course_name"] = _randstr(); 
+	echo "<br><br>";
+	$endpoints["enrollUserInCourse"] = enrollUserInCourse();
+	
+	// get courses
+	$endpoints["getUserCourses"] = getUserCourses();
+	
+	// post question
+	$_GET["course_id"] = 1; 
+	$_GET["question"] = _randstr(); 
+	echo "<br><br>";
+	$endpoints["postQuestion"] = postQuestion();
+
+	// post anser
+	$_GET["question_id"] = 1; 
+	$_GET["answer"] = _randstr(); 
+	echo "<br><br>";
+	$endpoints["postAnswer"] = postAnswer();
+
+	echo "<br><br>";
 	foreach ($endpoints as $key => $value) {
-		
-		sleep(1); 
+		echo "{$key} => {$value['error']}<br>";
 	}
+
 }
 
 function _validate($endpoint) {
 
-	$endpoints = getEndpoints(); 
+	$endpoints = []; 
+	$endpoints["createUser"] = ["email", "first_name", "last_name", "password"];
+	$endpoints["logIn"] = ["email", "password"];
+	$endpoints["enrollUserInCourse"] = ["user_id", "course_name"];
+	$endpoints["getUserCourses"] = ["user_id"];
+	$endpoints["postQuestion"] = ["user_id", "course_id", "question"];
+	$endpoints["getCourseQuestions"] = ["course_id"];
+	$endpoints["postAnswer"] = ["user_id", "question_id", "answer"];
+	$endpoints["getQuestionAnswers"] = ["question_id"];
+	$endpoints["likeQuestion"] = ["user_id", "question_id"];
+	$endpoints["likeAnswer"] = ["user_id", "answer_id"];
 
 	for ($i=0; $i < sizeof($endpoints[$endpoint]); $i++) { 
-
 		$attribute = $endpoints[$endpoint][$i]; 
 
 		if (isset($_GET[$attribute]) && trim($_GET[$attribute]) != "") {
@@ -410,7 +481,8 @@ function _respond($input) {
 	$array["error"] = False;
 	$array["error_message"] = ""; 
 	$array["data"] = $input; 
-	echo json_encode($array); 
+	echo json_encode($array);
+	return $array;
 }
 
 function _error($message) {
@@ -419,6 +491,7 @@ function _error($message) {
 	$array["error_message"] = $message; 
 	$array["data"] = []; 
 	echo json_encode($array); 
+	return $array;
 }
 
 // Useful for system wide announcments / debugging

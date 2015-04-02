@@ -39,6 +39,8 @@ class Model {
 			$db->exec(
 				"INSERT INTO \"" . $table_name . "\" (" . $cols . ") VALUES (" . $vals . "); "
 	  		);
+
+	  		return True; 
 		} else {
 			$rows = 0; 
 			$updated = 0; 
@@ -50,6 +52,7 @@ class Model {
 				}
 				$rows++; 
 			}
+
 			return $rows==$updated; 
 		}
 	}
