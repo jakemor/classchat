@@ -20,6 +20,10 @@ function github_push()  {
     echo $text; 
 }
 
+function test() {
+	echo "it worked!!"; 
+}
+
 function createUser() {
 	if (_validate("createUser")) {
 		$user = new User();
