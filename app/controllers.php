@@ -7,6 +7,7 @@ include "helpers.php";
 // API Endpoints
 
 function github_push()  {
+	echo getcwd() . "\n";
     $text = "" . shell_exec("sudo git pull");
     require "Twilio/Services/Twilio.php";
     $AccountSid = "ACbd652dd257ef5f7fdbf246a6e7af8d3a";
