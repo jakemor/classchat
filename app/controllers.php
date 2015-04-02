@@ -21,7 +21,7 @@ function github_push()  {
 }
 
 function test() {
-	echo "it worked!!"; 
+	echo "it worked (testing)!!"; 
 }
 
 function createUser() {
